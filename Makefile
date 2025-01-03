@@ -15,16 +15,16 @@ endif
 all: fmt build start
 
 build:
-	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-secrets-nebula cmd/vault-plugin-secrets-nebula/main.go
+	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o bao/plugins/bao-plugin-secrets-nebula cmd/bao-plugin-secrets-nebula/main.go
 
 start:
-	vault server -dev -dev-root-token-id=root -dev-plugin-dir=./vault/plugins
+	bao server -dev -dev-root-token-id=root -dev-plugin-dir=./bao/plugins
 
 enable:
-	vault secrets enable -path=nebula vault-plugin-secrets-nebula
+	bao secrets enable -path=nebula bao-plugin-secrets-nebula
 
 clean:
-	rm -f ./vault/plugins/vault-plugin-secrets-nebula
+	rm -f ./bao/plugins/bao-plugin-secrets-nebula
 
 fmt:
 	go fmt $$(go list ./...)

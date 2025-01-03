@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/vault/sdk/framework"
-	"github.com/hashicorp/vault/sdk/helper/errutil"
-	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/openbao/openbao/sdk/v2/framework"
+	"github.com/openbao/openbao/sdk/v2/helper/errutil"
+	"github.com/openbao/openbao/sdk/v2/logical"
 	"github.com/slackhq/nebula/cert"
 	"golang.org/x/crypto/ed25519"
 )

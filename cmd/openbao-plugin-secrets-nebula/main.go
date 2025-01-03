@@ -4,9 +4,10 @@ import (
 	"os"
 
 	nebula "github.com/3letteragency/vault-plugin-secrets-nebula"
+
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault/api"
-	"github.com/hashicorp/vault/sdk/plugin"
+	"github.com/openbao/openbao/api/v2"
+	"github.com/openbao/openbao/sdk/v2/plugin"
 )
 
 func main() {
