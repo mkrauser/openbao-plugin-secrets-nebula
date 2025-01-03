@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	nebula "github.com/3letteragency/vault-plugin-secrets-nebula"
+	nebula "github.com/mkrauser/openbao-plugin-secrets-nebula"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/openbao/openbao/api/v2"
