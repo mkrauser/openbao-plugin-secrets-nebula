@@ -45,6 +45,7 @@ func Backend() (*backend, error) {
 		Help:        strings.TrimSpace(backendHelp),
 		BackendType: logical.TypeLogical,
 		Paths: []*framework.Path{
+			buildPathGenerateCA(&b),
 			pathConfigCA(&b),
 		},
 	}
@@ -52,10 +53,9 @@ func Backend() (*backend, error) {
 	return &b, nil
 }
 
-func pathConfigCA(b *backend) *framework.Path {
+func buildPathGenerateCA(b *backend) *framework.Path {
 	return &framework.Path{
-		Pattern: "config/ca",
-
+		Pattern: "generate/ca",
 		Fields: map[string]*framework.FieldSchema{
 			"name": {
 				Type:        framework.TypeString,
@@ -82,12 +82,19 @@ func pathConfigCA(b *backend) *framework.Path {
 				Default:     "",
 			},
 		},
-
 		Operations: map[logical.Operation]framework.OperationHandler{
 			logical.UpdateOperation: &framework.PathOperation{
-				Callback: b.pathConfigCAUpdate,
+				Callback: b.pathGenerateCA,
 				Summary:  "",
 			},
+		},
+	}
+}
+
+func pathConfigCA(b *backend) *framework.Path {
+	return &framework.Path{
+		Pattern: "config/ca",
+		Operations: map[logical.Operation]framework.OperationHandler{
 			logical.DeleteOperation: &framework.PathOperation{
 				Callback: b.pathConfigCADelete,
 				Summary:  "",
@@ -100,7 +107,7 @@ func pathConfigCA(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathConfigCAUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+func (b *backend) pathGenerateCA(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	name := data.Get("name").(string)
 	if name == "" {
 		return nil, fmt.Errorf("Nebula CA Name may not be empty")
@@ -190,7 +197,20 @@ func (b *backend) pathConfigCAUpdate(ctx context.Context, req *logical.Request, 
 		return nil, err
 	}
 
-	return nil, err
+	pemCert, err := nc.MarshalToPEM()
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &logical.Response{
+		Data: map[string]interface{}{
+			"name": nc.Details.Name,
+			"cert": string(pemCert),
+		},
+	}
+
+	return resp, err
 }
 
 func (b *backend) pathConfigCARead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
@@ -206,10 +226,12 @@ func (b *backend) pathConfigCARead(ctx context.Context, req *logical.Request, da
 
 	certDetails := nc.Details
 
+	pemCert, err := nc.MarshalToPEM()
+
 	resp := &logical.Response{
 		Data: map[string]interface{}{
 			"name":       certDetails.Name,
-			"public_key": certDetails.PublicKey,
+			"public_key": string(pemCert),
 		},
 	}
 
