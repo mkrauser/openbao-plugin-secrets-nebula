@@ -15,13 +15,13 @@ endif
 all: fmt build start
 
 build:
-	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o bao/plugins/bao-plugin-secrets-nebula cmd/bao-plugin-secrets-nebula/main.go
+	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o bao/plugins/bao-plugin-secrets-nebula cmd/openbao-plugin-secrets-nebula/main.go
 
 start:
 	bao server -dev -dev-root-token-id=root -dev-plugin-dir=./bao/plugins
 
 enable:
-	bao secrets enable -path=nebula bao-plugin-secrets-nebula
+	bao secrets enable -path=nebula openbao-plugin-secrets-nebula
 
 clean:
 	rm -f ./bao/plugins/bao-plugin-secrets-nebula

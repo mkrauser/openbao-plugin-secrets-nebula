@@ -94,7 +94,17 @@ func buildPathGenerateCA(b *backend) *framework.Path {
 func pathConfigCA(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: "config/ca",
+		Fields: map[string]*framework.FieldSchema{
+			"pem_bundle": {
+				Type:        framework.TypeString,
+				Description: `PEM-format, unencrypted secret key and cert`,
+			},
+		},
 		Operations: map[logical.Operation]framework.OperationHandler{
+			logical.UpdateOperation: &framework.PathOperation{
+				Callback: b.pathConfigCAUpdate,
+				Summary:  "",
+			},
 			logical.DeleteOperation: &framework.PathOperation{
 				Callback: b.pathConfigCADelete,
 				Summary:  "",
@@ -211,6 +221,76 @@ func (b *backend) pathGenerateCA(ctx context.Context, req *logical.Request, data
 	}
 
 	return resp, err
+}
+
+func (b *backend) pathConfigCAUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+	rawPemBundle, ok := data.GetOk("pem_bundle")
+
+	if false == ok {
+		return logical.ErrorResponse("'pem_bundle' not provided"), nil
+
+	}
+
+	pemBundle := rawPemBundle.(string)
+
+	if len(pemBundle) == 0 {
+		return logical.ErrorResponse("'pem_bundle' is empty"), nil
+	}
+
+	if len(pemBundle) < 200 {
+		return logical.ErrorResponse("provided data for import was too short; perhaps a path was passed to the API rather than the contents of a PEM file"), nil
+	}
+
+	var privateKey ed25519.PrivateKey
+
+	privateKey, rest, err := cert.UnmarshalEd25519PrivateKey([]byte(pemBundle))
+
+	if err != nil {
+		return nil, errutil.InternalError{Err: fmt.Sprintf("unable to decode Certificate Key: %v", err)}
+	}
+
+	// save private key
+	entry, err := logical.StorageEntryJSON("config/ca_key", privateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	err = req.Storage.Put(ctx, entry)
+	if err != nil {
+		return nil, err
+	}
+
+	nc, rest, err := cert.UnmarshalNebulaCertificateFromPEM(rest)
+
+	if err != nil {
+		return nil, errutil.InternalError{Err: fmt.Sprintf("unable to decode Certificate: %v", err)}
+	}
+
+	entry, err = logical.StorageEntryJSON("config/ca_cert", nc)
+	if err != nil {
+		return nil, err
+	}
+
+	err = req.Storage.Put(ctx, entry)
+	if err != nil {
+		return nil, err
+	}
+
+	pemCert, err := nc.MarshalToPEM()
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &logical.Response{
+		Data: map[string]interface{}{
+			"name": nc.Details.Name,
+			"cert": string(pemCert),
+		},
+	}
+
+	return resp, err
+
 }
 
 func (b *backend) pathConfigCARead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
