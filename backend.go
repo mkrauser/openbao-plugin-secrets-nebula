@@ -266,6 +266,10 @@ func (b *backend) pathConfigCAUpdate(ctx context.Context, req *logical.Request, 
 		return nil, errutil.InternalError{Err: fmt.Sprintf("unable to decode Certificate: %v", err)}
 	}
 
+	if nc.Details.IsCA == false {
+		return nil, errutil.InternalError{Err: fmt.Sprintf("Certificate is not a Nebula CA", err)}
+	}
+
 	entry, err = logical.StorageEntryJSON("config/ca_cert", nc)
 	if err != nil {
 		return nil, err
