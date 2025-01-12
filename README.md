@@ -25,4 +25,7 @@ bao write nebula/sign/example.com \
 
 # read a certificate
 bao read nebula/cert/<fingerprint>
+
+# list certificates
+bao list nebula/certs
 ```
