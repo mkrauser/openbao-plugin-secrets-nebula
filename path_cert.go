@@ -173,15 +173,7 @@ func (b *backend) pathSign(ctx context.Context, req *logical.Request, data *fram
 	}
 
 	groups := data.Get("groups").(string)
-	var _groups []string
-	if groups != "" {
-		for _, rg := range strings.Split(groups, ",") {
-			g := strings.TrimSpace(rg)
-			if g != "" {
-				_groups = append(_groups, g)
-			}
-		}
-	}
+	_groups := parseGroups(groups)
 
 	duration, durationOk := data.GetOk("duration")
 

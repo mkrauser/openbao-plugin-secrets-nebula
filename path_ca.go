@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"net"
 	"strings"
 	"time"
 
@@ -91,15 +90,7 @@ func (b *backend) pathGenerateCA(ctx context.Context, req *logical.Request, data
 	}
 
 	groups := data.Get("groups").(string)
-	var _groups []string
-	if groups != "" {
-		for _, rg := range strings.Split(groups, ",") {
-			g := strings.TrimSpace(rg)
-			if g != "" {
-				_groups = append(_groups, g)
-			}
-		}
-	}
+	_groups := parseGroups(groups)
 
 	duration := data.Get("duration").(string)
 	var _duration time.Duration
@@ -109,34 +100,17 @@ func (b *backend) pathGenerateCA(ctx context.Context, req *logical.Request, data
 	}
 
 	ips := data.Get("ips").(string)
-	var _ips []*net.IPNet
-	if ips != "" {
-		for _, rs := range strings.Split(ips, ",") {
-			rs := strings.Trim(rs, " ")
-			if rs != "" {
-				ip, ipNet, err := net.ParseCIDR(rs)
-				if err != nil {
-					return nil, fmt.Errorf("invalid ip definition: %s", err)
-				}
-				ipNet.IP = ip
-				_ips = append(_ips, ipNet)
-			}
-		}
+	_ips, err := parseCIDRList(ips)
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid ip definition: %s", err)
 	}
 
 	subnets := data.Get("subnets").(string)
-	var _subnets []*net.IPNet
-	if subnets != "" {
-		for _, rs := range strings.Split(subnets, ",") {
-			rs := strings.Trim(rs, " ")
-			if rs != "" {
-				_, s, err := net.ParseCIDR(rs)
-				if err != nil {
-					return nil, fmt.Errorf("invalid subnet definition: %s", err)
-				}
-				_subnets = append(_subnets, s)
-			}
-		}
+	_subnets, err := parseCIDRList(subnets)
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid subnet definition: %s", err)
 	}
 
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
@@ -160,22 +134,12 @@ func (b *backend) pathGenerateCA(ctx context.Context, req *logical.Request, data
 
 	nc.Sign(privateKey)
 
-	entry, err := logical.StorageEntryJSON("ca", nc)
+	err = saveCertificateEntry(ctx, req, "ca", nc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = req.Storage.Put(ctx, entry)
-	if err != nil {
-		return nil, err
-	}
-
-	entry, err = logical.StorageEntryJSON("ca_key", privateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	err = req.Storage.Put(ctx, entry)
+	err = saveCertificateEntry(ctx, req, "ca_key", privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -244,12 +208,7 @@ func (b *backend) pathConfigCAUpdate(ctx context.Context, req *logical.Request, 
 	}
 
 	// save private key
-	entry, err := logical.StorageEntryJSON("ca_key", privateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	err = req.Storage.Put(ctx, entry)
+	err = saveCertificateEntry(ctx, req, "ca_key", privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -264,12 +223,7 @@ func (b *backend) pathConfigCAUpdate(ctx context.Context, req *logical.Request, 
 		return nil, errutil.InternalError{Err: "Certificate is not a Nebula CA"}
 	}
 
-	entry, err = logical.StorageEntryJSON("ca", nc)
-	if err != nil {
-		return nil, err
-	}
-
-	err = req.Storage.Put(ctx, entry)
+	err = saveCertificateEntry(ctx, req, "ca", nc)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +258,7 @@ func (b *backend) pathConfigCARead(ctx context.Context, req *logical.Request, da
 
 	certDetails := nc.Details
 
-	pemCert, err := nc.MarshalToPEM()
+	pemCert, _ := nc.MarshalToPEM()
 
 	resp := &logical.Response{
 		Data: map[string]interface{}{
