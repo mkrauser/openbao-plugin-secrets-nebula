@@ -44,6 +44,7 @@ func Backend() (*backend, error) {
 			buildPathSign(&b),
 			buildPathCert(&b),
 			buildPathListCerts(&b),
+			buildPathRevoke(&b),
 		},
 	}
 

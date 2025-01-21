@@ -87,7 +87,11 @@ func (b *backend) pathReadCert(ctx context.Context, req *logical.Request, data *
 	cleanFingerprint := strings.ReplaceAll(fingerprint, ":", "")
 	storageEntry, err := req.Storage.Get(ctx, "certs/"+cleanFingerprint)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid Fingerprint" + cleanFingerprint)
+		return nil, fmt.Errorf("Invalid Fingerprint")
+	}
+
+	if storageEntry == nil {
+		return nil, fmt.Errorf("Certificate not found")
 	}
 
 	var nc cert.NebulaCertificate
@@ -110,7 +114,23 @@ func (b *backend) pathReadCert(ctx context.Context, req *logical.Request, data *
 		},
 	}
 
-	return resp, err
+	revokedStorageEntry, err := req.Storage.Get(ctx, "revoked/"+cleanFingerprint)
+	if err == nil && revokedStorageEntry != nil {
+		var revocationDetails RevocationDetails
+		// Decode the JSON data into the struct
+		err = revokedStorageEntry.DecodeJSON(&revocationDetails)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode revocation details: %v", err)
+		}
+
+		// Adding revocation time in Unix format
+		resp.Data["revocation_time"] = revocationDetails.RevokedAt.Unix()
+
+		// Adding revocation time in RFC3339 format
+		resp.Data["revocation_time_rfc3339"] = revocationDetails.RevokedAt.Format(time.RFC3339)
+	}
+
+	return resp, nil
 }
 
 func buildPathSign(b *backend) *framework.Path {
