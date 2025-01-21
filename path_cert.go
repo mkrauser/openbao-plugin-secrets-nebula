@@ -57,7 +57,7 @@ func (b *backend) pathCertList(ctx context.Context, req *logical.Request, _ *fra
 
 func buildPathCert(b *backend) *framework.Path {
 	return &framework.Path{
-		Pattern: "cert/" + framework.GenericNameRegex("fingerprint"),
+		Pattern: "cert/" + framework.MatchAllRegex("fingerprint"),
 		Fields: map[string]*framework.FieldSchema{
 			"fingerprint": {
 				Type:        framework.TypeString,
@@ -77,12 +77,17 @@ func buildPathCert(b *backend) *framework.Path {
 func (b *backend) pathReadCert(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	fingerprint := data.Get("fingerprint").(string)
 	if fingerprint == "" {
-		return nil, fmt.Errorf("nebula Certificate Name may not be empty")
+		return nil, fmt.Errorf("Please Specify Certificate Fingerprint")
 	}
 
-	storageEntry, err := req.Storage.Get(ctx, "certs/"+fingerprint)
+	if len(fingerprint) != 79 {
+		return nil, fmt.Errorf("Invalid Fingerprint")
+	}
+
+	cleanFingerprint := strings.ReplaceAll(fingerprint, ":", "")
+	storageEntry, err := req.Storage.Get(ctx, "certs/"+cleanFingerprint)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Invalid Fingerprint" + cleanFingerprint)
 	}
 
 	var nc cert.NebulaCertificate
