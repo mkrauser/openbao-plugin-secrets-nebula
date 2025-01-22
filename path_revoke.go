@@ -61,6 +61,36 @@ func buildPathRevoke(b *backend) *framework.Path {
 	}
 }
 
+func buildPathListCertsRevoked(b *backend) *framework.Path {
+	return &framework.Path{
+		Pattern: "certs/revoked/?$",
+
+		DisplayAttrs: &framework.DisplayAttributes{
+			OperationPrefix: "nebula",
+			OperationSuffix: "revoked-certs",
+		},
+
+		Operations: map[logical.Operation]framework.OperationHandler{
+			logical.ListOperation: &framework.PathOperation{
+				Callback: b.pathListRevokedCertsHandler,
+			},
+		},
+	}
+}
+
+func (b *backend) pathListRevokedCertsHandler(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+	entries, err := req.Storage.List(ctx, "certs/")
+	if err != nil {
+		return nil, err
+	}
+
+	for i, str := range entries {
+		entries[i] = formatFingerprint(str)
+	}
+
+	return logical.ListResponse(entries), nil
+}
+
 func (b *backend) pathRevokeCert(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	fingerprint := data.Get("fingerprint").(string)
 	if fingerprint == "" {
