@@ -29,3 +29,7 @@ bao read nebula/cert/<fingerprint>
 # list certificates
 bao list nebula/certs
 ```
+
+## 🤝 Contributing
+
+Contributions are welcome!
