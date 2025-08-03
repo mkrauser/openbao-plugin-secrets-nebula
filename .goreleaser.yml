@@ -61,4 +61,4 @@ release:
 
   # Footer template for GitHub release
   footer: |
-    **Full Changelog**: https://github.com/owner/openbao-plugin-secrets-nebula/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/mkrauser/openbao-plugin-secrets-nebula/compare/{{ .PreviousTag }}...{{ .Tag }}
