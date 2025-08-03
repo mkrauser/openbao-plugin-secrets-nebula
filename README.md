@@ -21,13 +21,33 @@ bao read nebula/config/ca
 # generate a host certificate
 bao write nebula/sign/example.com \
     ip="10.0.0.1/32" \
-    duration="100d"
+    duration="100h"
 
 # read a certificate
 bao read nebula/cert/<fingerprint>
 
 # list certificates
 bao list nebula/certs
+
+# write tidy config
+bao write nebula/config/auto-tidy 
+    enabled=true \
+    interval_duration="24h" \
+    tidy_expired_certs=true \
+    tidy_revoked_certs=true \
+    safety_buffer="168h"  # 1 week safety buffer
+
+# confirm tidy config
+
+bao read nebula/config/auto-tidy
+
+# invoke tidy manually
+bao write nebula/tidy \
+    enabled=true \
+    interval_duration="24h" \
+    tidy_expired_certs=true \
+    tidy_revoked_certs=true \
+    safety_buffer="48h"
 ```
 
 ## 🤝 Contributing
