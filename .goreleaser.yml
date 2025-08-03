@@ -1,0 +1,64 @@
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    main: ./cmd/openbao-plugin-secrets-nebula
+    binary: openbao-plugin-secrets-nebula
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+
+release:
+  prerelease: auto # Mark releases as pre-release if there's a dash in the version (e.g., v1.0.0-rc1)
+  draft: false # Automatically publish releases
+
+  # GitHub release header template
+  header: |
+    ## OpenBao Nebula Secrets Plugin {{ .Tag }}
+
+    This release contains the OpenBao plugin binary for managing Nebula certificates.
+
+    ### Installation
+
+    1. Download the appropriate binary for your system
+    2. Move it to your OpenBao plugins directory
+    3. Register the plugin with OpenBao:
+    ```shell
+    SHA256=$(sha256sum openbao-plugin-secrets-nebula | cut -d' ' -f1)
+    bao write sys/plugins/catalog/secret/bao-plugin-secrets-nebula sha256=$SHA256 command="openbao-plugin-secrets-nebula"
+    ```
+
+  # Footer template for GitHub release
+  footer: |
+    **Full Changelog**: https://github.com/owner/openbao-plugin-secrets-nebula/compare/{{ .PreviousTag }}...{{ .Tag }}
