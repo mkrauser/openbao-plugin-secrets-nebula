@@ -7,6 +7,11 @@ A secrets engine plugin for [OpenBao](https://github.com/openbao/openbao) that m
 - Automatically rotate CA certificates
 - Clean up expired and revoked certificates
 
+> [!NOTE]  
+> for Vault Users: I developed and tested this against openbao. 
+> I did some basic testing with vault, which looked promising.
+> If you test this with vault, please let me know if you run into any issues.
+
 ## Features
 
 - **CA Management**:

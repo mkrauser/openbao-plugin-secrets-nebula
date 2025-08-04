@@ -20,6 +20,9 @@ build:
 start:
 	bao server -dev -dev-root-token-id=root -dev-plugin-dir=./bao/plugins
 
+start-vault:
+	vault server -dev -dev-root-token-id=root -dev-plugin-dir=./bao/plugins -dev-vault
+
 enable:
 	bao secrets enable -path=nebula openbao-plugin-secrets-nebula
 
